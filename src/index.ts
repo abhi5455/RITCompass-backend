@@ -2,6 +2,7 @@ import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
 import Logger from "./lib/Logger";
+import connectDB from "./db/config";
 
 require('dotenv').config();
 
@@ -15,8 +16,14 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 
+connectDB();
 
-
+app.get('/is-alive', (req, res) => {
+    return res.json({
+        message: 'Server is alive',
+        serverTime: new Date()
+    })
+});
 
 app.listen(PORT, async () => {
     Logger.success(`Server started on port ${PORT}`);
