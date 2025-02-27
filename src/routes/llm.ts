@@ -122,7 +122,7 @@ Extract the key steps involved in the process and convert them into a **timeline
         res.json({
             status: "categorized",
             categories: JSON.parse(result.content as string),
-            // data: JSON.parse(primaryResult.content as string)
+            data: JSON.parse(primaryResult.content as string)
         });
 
     } catch (e) {
