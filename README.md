@@ -1,5 +1,16 @@
-# Express + TS template
+# RITCompass Backend
 
+RITCompass is a **Generalized College Enquiry System** that provides structured, verified information about college procedures using **LangChain** and **semantic search**. It serves as a constrained, reliable alternative to searching for college-related queries.
+
+## 🚀 Features
+- 🔍 **Semantic Search with LangChain**
+- 🏛 **MongoDB for structured information retrieval**
+
+## 🛠️ Tech Stack
+- **Backend:** Express.js, Node.js, TypeScript
+- **Database:** MongoDB
+- **Search & AI:** LangChain, OpenAI embeddings
+- **Data Format:** Markdown
 
 
 ### Development
@@ -14,7 +25,10 @@
     ```
 3. Create a `.env` file and populate it with the following environment variables.
     ```dotenv
-    PORT=3000
+    PORT=5000
+    MONGO_URI=
+    OPENAI_API_KEY=
+    SECRET_KEY=
     ```
 4. Start the development server.
     ```bash
@@ -24,7 +38,7 @@
     # or
     pnpm dev
     ```
-5. The server would be running at [http://localhost:3000](http://localhost:3000) locally.
+5. The server would be running at [http://localhost:5000](http://localhost:5000) locally.
 
 ### Production
 

@@ -3,6 +3,8 @@ import {ChatOpenAI} from "@langchain/openai";
 import {HumanMessage, SystemMessage} from "@langchain/core/messages";
 import initialData from "../data/initialData";
 import {DataCategory} from "../data/data.type";
+import HTTP_status from "../lib/HTTP_status";
+import jwt from "jsonwebtoken";
 
 const llmRouter = Router();
 
@@ -75,9 +77,23 @@ ${item.description}
 
 
 llmRouter.post('/ask', async (req, res) => {
-    const {msg} = req.body;
+    const {msg, chat_id} = req.body;
+
+    if (!msg || !chat_id) {
+        return res.status(HTTP_status.BAD_REQUEST).json({
+            success: false,
+            message: !chat_id && !msg ? 'msg and chat_id is required' : !msg ? 'msg is required' : 'chat_id is required'
+        })
+    }
+
+
 
     try {
+        const authHeader = req.headers['authorization'];
+        let decoded;
+        if (authHeader)
+                decoded = jwt.decode(authHeader.split(' ')[1]!);
+
         const messages = [
             new SystemMessage(categorizePrompt),
             new HumanMessage(msg),
@@ -107,9 +123,6 @@ ${fromCatStr.map((i: any) => "```md\n" + i + "\n```").join("\n---\n")}
 
 Extract the key steps involved in the process and convert them into a **timeline** format (json) for each process add that data to any array and return this;`;
 
-        // console.log(finalPrompt);
-
-
         const finalMsg = [
             new SystemMessage(finalPrompt),
             new HumanMessage(msg),
@@ -117,9 +130,17 @@ Extract the key steps involved in the process and convert them into a **timeline
 
         const primaryResult = await model.invoke(finalMsg);
 
-        console.log(primaryResult.content);
 
-        res.json({
+        console.log(decoded);
+
+        // const chat = new History({
+        //     chat_id,
+        //     user_id: "1234",
+        //     user_msg: msg,
+        //     ai_msg: primaryResult.content as string
+        // })
+
+        return res.json({
             status: "categorized",
             categories: JSON.parse(result.content as string),
             data: JSON.parse(primaryResult.content as string)
