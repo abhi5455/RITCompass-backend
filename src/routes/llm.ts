@@ -1,4 +1,4 @@
-import {Router} from "express";
+    import {Router} from "express";
 import {ChatOpenAI} from "@langchain/openai";
 import {HumanMessage, SystemMessage} from "@langchain/core/messages";
 import initialData from "../data/initialData";
@@ -7,12 +7,6 @@ import HTTP_status from "../lib/HTTP_status";
 import jwt from "jsonwebtoken";
 
 const llmRouter = Router();
-
-
-const model = new ChatOpenAI({
-    model: "gpt-4o-mini",
-    temperature: 0
-});
 
 
 const categorizePrompt = `
@@ -75,6 +69,15 @@ ${item.description}
     return str;
 }
 
+const strictModel = new ChatOpenAI({
+    model: "gpt-4o-mini",
+    temperature: 0
+});
+
+const freeModel = new ChatOpenAI({
+    model: "gpt-4o-mini",
+    temperature: 1
+});
 
 llmRouter.post('/ask', async (req, res) => {
     const {msg, chat_id} = req.body;
@@ -86,7 +89,7 @@ llmRouter.post('/ask', async (req, res) => {
         })
     }
 
-
+    let currModel = strictModel;
 
     try {
         const authHeader = req.headers['authorization'];
@@ -99,14 +102,22 @@ llmRouter.post('/ask', async (req, res) => {
             new HumanMessage(msg),
         ];
 
-        const result = await model.invoke(messages);
+        const result = await strictModel.invoke(messages);
 
         const categories = JSON.parse(result.content as string);
 
         const fromCatStr = categories.map((category: string) => formatDataPoint(initialData[category]));
+        
+        console.log("CATS:", categories)
 
-        const finalPrompt = `IMPORTANT: Only give back json. No need for markdown or anyother things. Only give json. You are an intelligent assistant called RITCompass of RIT college, you provides clear, easy-to-follow steps to help you navigate college life at RIT, you acts as a query engine that converts given data into a structured response in json. You sit at the backend and from the frontend a prompt is passed (to which a context is added). You should return an array of timeline data in json.
+        if(categories.length === 0) {
+            console.info("Used a free model; as categorizer is empty");
+            currModel = freeModel;
+        }
+
+        const finalPrompt = `IMPORTANT: Only give back json. No need for markdown or any other things. Only give json. You are an intelligent assistant called RITCompass of RIT college, you provides clear, easy-to-follow steps to help you navigate college life at RIT, you acts as a query engine that converts given data into a structured response in json. You sit at the backend and from the frontend a prompt is passed (to which a context is added). If any unrelated query is asked return a message (with type = message) in the data returned. You should return an array of data in timeline or message in json.
 [{
+    "type": "timeline" | "message",
     "timeline": [
         {
         "title": "<Step Title>",
@@ -116,6 +127,7 @@ llmRouter.post('/ask', async (req, res) => {
         "related_links": "<related links>"
         }
     ],
+    "message": "<some message>", // Available only if no timeline is present
     remarks: "<Any additional remarks>",
 }]
 The following is a data point about a specific process(s) (each process is in its own block):
@@ -123,12 +135,13 @@ ${fromCatStr.map((i: any) => "```md\n" + i + "\n```").join("\n---\n")}
 
 Extract the key steps involved in the process and convert them into a **timeline** format (json) for each process add that data to any array and return this;`;
 
+
         const finalMsg = [
             new SystemMessage(finalPrompt),
             new HumanMessage(msg),
         ];
 
-        const primaryResult = await model.invoke(finalMsg);
+        const primaryResult = await currModel.invoke(finalMsg);
 
 
         console.log(decoded);
